@@ -1,0 +1,35 @@
+{
+    "name": "soliphp/process",
+    "description": "Simple multi-process manager for PHP, based on pcntl and posix.",
+    "type": "library",
+    "keywords": ["multi-process", "process", "soliphp", "soli"],
+    "homepage": "https://github.com/soliphp/process",
+    "support": {
+        "issues": "https://github.com/soliphp/process/issues",
+        "source": "https://github.com/soliphp/process"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "ueaner",
+            "email": "ueaner@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.0",
+        "ext-pcntl": "*",
+        "ext-posix": "*"
+    },
+    "suggest": {
+        "signals": "Signal handling needs PHP 7.1+."
+    },
+    "autoload": {
+        "psr-4": {
+            "Soli\\": "src/"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "minimum-stability": "dev"
+}

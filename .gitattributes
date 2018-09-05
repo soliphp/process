@@ -1,0 +1,4 @@
+* text=auto
+
+/examples export-ignore
+/.* export-ignore
