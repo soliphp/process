@@ -54,6 +54,8 @@ class Process
 
                 $this->setProcName();
 
+                register_shutdown_function([$this, 'handleShutdown']);
+
                 // Run worker.
                 $this->run();
                 exit(0);
@@ -144,13 +146,13 @@ class Process
 
     protected function run()
     {
-        register_shutdown_function([$this, 'handleShutdown']);
-
         try {
             // Run job.
             call_user_func($this->job, $this);
         } catch (\Throwable $e) {
             $this->log('[worker '. posix_getpid() .'] ' . $e);
+            // rerun
+            $this->run();
         }
     }
 
