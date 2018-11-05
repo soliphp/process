@@ -126,7 +126,7 @@ class Process
                 if ($id !== false) {
                     unset(static::$workers[$id]);
                 }
-                $this->log("[worker $pid] exited with status $status");
+                $this->log("[worker.$id $pid] exited with status $status");
             }
         }
 
@@ -150,7 +150,7 @@ class Process
             // Run job.
             call_user_func($this->job, $this);
         } catch (\Throwable $e) {
-            $this->log('[worker '. posix_getpid() .'] ' . $e);
+            $this->log("[worker.{$this->id} {$this->workerPid}] " . $e);
             // rerun
             $this->run();
         }
@@ -158,7 +158,7 @@ class Process
 
     public function handleShutdown()
     {
-        $errmsg = '[worker '. posix_getpid() .'] process terminated';
+        $errmsg = "[worker.{$this->id} {$this->workerPid}] process terminated";
         // Handle last error.
         $error = error_get_last();
         if ($error) {
@@ -223,7 +223,7 @@ class Process
                 unset(static::$workers[$id]);
             }
         } else {
-            $this->log('[worker '. posix_getpid() .'] ' . $msg);
+            $this->log("[worker.{$this->id} {$this->workerPid}] " . $msg);
 
             // Worker process exit.
             exit(0);
