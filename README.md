@@ -57,6 +57,9 @@ Soli Process
 
 master 进程 fork worker 进程，在 PHP 7.1+ 下 master 进程还会接收终止信号传递给 worker 进程执行退出。
 
+## 自动补充退出的进程
+
+如程序出现异常或其他情况导致进程退出，会自动补充进程，且保持对应的 $worker->id 不变。
 
 ## 函数列表
 

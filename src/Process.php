@@ -43,26 +43,31 @@ class Process
         $this->setProcName();
 
         for ($id = 1; $id <= $this->count; $id++) {
-            $pid = $this->fork();
-
-            if ($pid > 0) {
-                static::$workers[$id] = $pid;
-            } else {
-                static::$isMaster = false;
-                $this->id = $id;
-                $this->workerPid = posix_getpid();
-
-                $this->setProcName();
-
-                register_shutdown_function([$this, 'handleShutdown']);
-
-                // Run worker.
-                $this->run();
-                exit(0);
-            }
+            $this->forkWorker($id);
         }
 
         $this->waitAll();
+    }
+
+    protected function forkWorker($id)
+    {
+        $pid = $this->fork();
+
+        if ($pid > 0) {
+            static::$workers[$id] = $pid;
+        } else {
+            static::$isMaster = false;
+            $this->id = $id;
+            $this->workerPid = posix_getpid();
+
+            $this->setProcName();
+
+            register_shutdown_function([$this, 'handleShutdown']);
+
+            // Run worker.
+            $this->run();
+            exit(0);
+        }
     }
 
     protected function daemonize()
@@ -123,10 +128,13 @@ class Process
         while (($pid = pcntl_wait($status, WUNTRACED)) != -1) {
             if ($pid > 0) {
                 $id = array_search($pid, static::$workers);
-                if ($id !== false) {
-                    unset(static::$workers[$id]);
+                if ($id === false) {
+                    continue;
                 }
-                $this->log("[worker.$id $pid] exited with status $status");
+                $this->log("[worker:$id $pid] exited with status $status");
+                unset(static::$workers[$id]);
+                // refork
+                $this->forkWorker($id);
             }
         }
 
@@ -150,15 +158,14 @@ class Process
             // Run job.
             call_user_func($this->job, $this);
         } catch (\Throwable $e) {
-            $this->log("[worker.{$this->id} {$this->workerPid}] " . $e);
-            // rerun
-            $this->run();
+            $this->log("[worker:{$this->id} {$this->workerPid}] " . $e);
+            exit(250);
         }
     }
 
     public function handleShutdown()
     {
-        $errmsg = "[worker.{$this->id} {$this->workerPid}] process terminated";
+        $errmsg = "[worker:{$this->id} {$this->workerPid}] process terminated";
         // Handle last error.
         $error = error_get_last();
         if ($error) {
@@ -223,7 +230,7 @@ class Process
                 unset(static::$workers[$id]);
             }
         } else {
-            $this->log("[worker.{$this->id} {$this->workerPid}] " . $msg);
+            $this->log("[worker:{$this->id} {$this->workerPid}] " . $msg);
 
             // Worker process exit.
             exit(0);
