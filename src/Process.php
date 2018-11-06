@@ -20,6 +20,9 @@ class Process
 
     public $logFile = null;
 
+    // worker 进程退出后是否自动补充新的进程
+    public $refork = true;
+
     protected $job = null;
 
     protected static $isMaster = true;
@@ -133,8 +136,11 @@ class Process
                 }
                 $this->log("[worker:$id $pid] exited with status $status");
                 unset(static::$workers[$id]);
+
                 // refork
-                $this->forkWorker($id);
+                if ($this->refork) {
+                    $this->forkWorker($id);
+                }
             }
         }
 
