@@ -45,11 +45,15 @@ class Process
         $this->masterPid = posix_getpid();
         $this->setProcName();
 
+        $this->log("\"{$this->name}\" started");
+
         for ($id = 1; $id <= $this->count; $id++) {
             $this->forkWorker($id);
         }
 
         $this->waitAll();
+
+        $this->log("\"{$this->name}\" stopped");
     }
 
     protected function forkWorker($id)
@@ -64,8 +68,6 @@ class Process
             $this->workerPid = posix_getpid();
 
             $this->setProcName();
-
-            register_shutdown_function([$this, 'handleShutdown']);
 
             // Run worker.
             $this->run();
@@ -134,7 +136,7 @@ class Process
                 if ($id === false) {
                     continue;
                 }
-                $this->log("[worker:$id $pid] exited with status $status");
+                $this->log("[worker:$id $pid] process stopped with status $status");
                 unset(static::$workers[$id]);
 
                 // refork
@@ -143,8 +145,6 @@ class Process
                 }
             }
         }
-
-        $this->log("\"{$this->name}\" stopped");
     }
 
     protected function setProcName()
@@ -160,7 +160,10 @@ class Process
 
     protected function run()
     {
+        register_shutdown_function([$this, 'handleShutdown']);
+
         try {
+            $this->log("[worker:{$this->id} {$this->workerPid}] process started");
             // Run job.
             call_user_func($this->job, $this);
         } catch (\Throwable $e) {
