@@ -29,6 +29,8 @@ class Process
 
     protected static $workers = [];
 
+    protected static $shutdown = false;
+
     public function setJob(callable $job)
     {
         $this->job = $job;
@@ -130,7 +132,8 @@ class Process
 
     protected function waitAll()
     {
-        while (($pid = pcntl_wait($status, WUNTRACED)) != -1) {
+        while (1) {
+            $pid = pcntl_wait($status, WUNTRACED);
             if ($pid > 0) {
                 $id = array_search($pid, static::$workers);
                 if ($id === false) {
@@ -139,10 +142,14 @@ class Process
                 $this->log("[worker:$id $pid] process stopped with status $status");
                 unset(static::$workers[$id]);
 
-                // refork
-                if ($this->refork) {
+                if (!static::$shutdown && $this->refork) {
+                    // refork
                     $this->forkWorker($id);
                 }
+            }
+
+            if (static::$shutdown && empty(static::$workers)) {
+                break;
             }
         }
     }
@@ -186,7 +193,8 @@ class Process
 
     public function log($contents)
     {
-        $contents = sprintf("[%s] [master %s] %s\n", date('Y-m-d H:i:s'), $this->masterPid, $contents);
+        $time = gettimeofday();
+        $contents = sprintf("[%s.%s] [master %s] %s\n", date('Y-m-d H:i:s', $time['sec']), $time['usec'], $this->masterPid, $contents);
         if (!$this->daemonize) {
             echo $contents;
         }
@@ -224,19 +232,12 @@ class Process
         };
 
         if (static::$isMaster) {
+            static::$shutdown = true;
             $this->log($msg);
 
             // Send stop signal to all worker processes.
             foreach (static::$workers as $id => $workerPid) {
                 posix_kill($workerPid, $signo);
-            }
-
-            sleep(1);
-            foreach (static::$workers as $id => $workerPid) {
-                if (posix_kill($workerPid, 0)) {
-                    posix_kill($workerPid, SIGKILL);
-                }
-                unset(static::$workers[$id]);
             }
         } else {
             $this->log("[worker:{$this->id} {$this->workerPid}] " . $msg);
