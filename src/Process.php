@@ -142,13 +142,13 @@ class Process
                 $this->log("[worker:$id $pid] process stopped with status $status");
                 unset(static::$workers[$id]);
 
-                if (!static::$shutdown && $this->refork) {
+                if ($this->refork && !static::$shutdown) {
                     // refork
                     $this->forkWorker($id);
                 }
             }
 
-            if (static::$shutdown && empty(static::$workers)) {
+            if (empty(static::$workers) && (static::$shutdown || $this->refork == false)) {
                 break;
             }
         }
