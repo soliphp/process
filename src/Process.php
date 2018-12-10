@@ -68,7 +68,6 @@ class Process
             static::$isMaster = false;
             $this->id = $id;
             $this->workerPid = posix_getpid();
-
             $this->setProcName();
 
             // Run worker.
@@ -122,7 +121,7 @@ class Process
         fclose(STDOUT);
         fclose(STDERR);
 
-        $logFile = $this->logFile ? $this->logFile : '/dev/null';
+        $logFile = $this->logFile ?: '/dev/null';
 
         global $stdin, $stdout, $stderr;
         $stdin = fopen('/dev/null', 'r');
@@ -167,7 +166,7 @@ class Process
 
     protected function run()
     {
-        register_shutdown_function([$this, 'handleShutdown']);
+        register_shutdown_function([$this, 'handleFatalError']);
 
         try {
             $this->log("[worker:{$this->id} {$this->workerPid}] process started");
@@ -179,7 +178,7 @@ class Process
         }
     }
 
-    public function handleShutdown()
+    public function handleFatalError()
     {
         $errmsg = "[worker:{$this->id} {$this->workerPid}] process terminated";
         // Handle last error.
