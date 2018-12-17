@@ -22,7 +22,7 @@ if (!function_exists('data_segment')) {
      *      // do something ...
      *  }
      *
-     * @param int $id 当前 worker id
+     * @param int $id 当前 worker id 范围是：[0, $worker->count - 1]
      * @param int $count worker 进程总数
      * @param int $total 需要处理的数据总条数
      * @return array [$start, $end, $number]
@@ -32,22 +32,20 @@ if (!function_exists('data_segment')) {
         // 每个进程平均处理多少条数据
         $number = intval($total / $count);
 
-        // 是否以整数个均分到每个进程
+        // 余数：是否以整数个均分到每个进程
         $remain = $total % $count;
 
-        // 有余，将多余的数据分到前 [1, $remain] 个 worker，$worker->id 从 1 开始
+        // 有余，将多余的数据分到前 [0, $remain - 1] 个 worker，$worker->id 从 0 开始
         if ($remain) {
-            if ($id > $remain) {
-                // worker id 大于余数
-                $start = ($id - 1) * $number + $remain;
+            if ($id >= $remain) {
+                $start = $id * $number + $remain;
             } else {
-                // worker id 在余数之内
                 $number++;
-                $start = ($id - 1) * $number;
+                $start = $id * $number;
             }
         } else {
             // 刚好可以平分在各个 worker 中
-            $start = ($id - 1) * $number;
+            $start = $id * $number;
         }
 
         $end = $start + $number;

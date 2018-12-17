@@ -95,7 +95,7 @@ master 进程 fork worker 进程，在 PHP 7.1+ 下 master 进程还会接收终
 
 ### id
 
-当前 worker 进程的编号，编号范围：[1, $worker->count]。
+当前 worker 进程的编号，编号范围：[0, $worker->count - 1]。
 
 `可在 job 回调中使用`。
 

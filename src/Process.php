@@ -49,7 +49,7 @@ class Process
 
         $this->log("\"{$this->name}\" started");
 
-        for ($id = 1; $id <= $this->count; $id++) {
+        for ($id = 0; $id < $this->count; $id++) {
             $this->forkWorker($id);
         }
 
