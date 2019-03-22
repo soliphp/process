@@ -115,13 +115,13 @@ class Process
 
     protected function redirectStd()
     {
+        $logFile = $this->logFile ?: '/dev/null';
+
         // redirect stdin to /dev/null
         // redirect stdout, stderr to $logFile
         fclose(STDIN);
         fclose(STDOUT);
         fclose(STDERR);
-
-        $logFile = $this->logFile ?: '/dev/null';
 
         global $stdin, $stdout, $stderr;
         $stdin = fopen('/dev/null', 'r');
@@ -172,8 +172,11 @@ class Process
             $this->log("[worker:{$this->id} {$this->workerPid}] process started");
             // Run job.
             call_user_func($this->job, $this);
+        } catch (\Exception $e) {
+            $this->log("[worker:{$this->id} {$this->workerPid}] $e");
+            exit(250);
         } catch (\Throwable $e) {
-            $this->log("[worker:{$this->id} {$this->workerPid}] " . $e);
+            $this->log("[worker:{$this->id} {$this->workerPid}] $e");
             exit(250);
         }
     }
@@ -193,7 +196,8 @@ class Process
     public function log($contents)
     {
         $time = gettimeofday();
-        $contents = sprintf("[%s.%s] [master %s] %s\n", date('Y-m-d H:i:s', $time['sec']), $time['usec'], $this->masterPid, $contents);
+        $usec = str_pad($time['usec'], 6, '0');
+        $contents = sprintf("[%s.%s] [master %s] %s\n", date('Y-m-d H:i:s', $time['sec']), $usec, $this->masterPid, $contents);
         if (!$this->daemonize) {
             echo $contents;
         }
