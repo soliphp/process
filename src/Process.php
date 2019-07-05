@@ -166,24 +166,27 @@ class Process
 
     protected function run()
     {
+        srand();
+        mt_srand();
+
         register_shutdown_function([$this, 'handleFatalError']);
 
         try {
-            $this->log("[worker:{$this->id} {$this->workerPid}] process started");
+            $this->log("process started");
             // Run job.
             call_user_func($this->job, $this);
         } catch (\Exception $e) {
-            $this->log("[worker:{$this->id} {$this->workerPid}] $e");
+            $this->log($e);
             exit(250);
         } catch (\Throwable $e) {
-            $this->log("[worker:{$this->id} {$this->workerPid}] $e");
+            $this->log($e);
             exit(250);
         }
     }
 
     public function handleFatalError()
     {
-        $errmsg = "[worker:{$this->id} {$this->workerPid}] process terminated";
+        $errmsg = "process terminated";
         // Handle last error.
         $error = error_get_last();
         if ($error) {
@@ -197,7 +200,10 @@ class Process
     {
         $time = gettimeofday();
         $usec = str_pad($time['usec'], 6, '0');
-        $contents = sprintf("[%s.%s] [master %s] %s\n", date('Y-m-d H:i:s', $time['sec']), $usec, $this->masterPid, $contents);
+
+        $workerInfo = static::$isMaster ? '' : "[worker:{$this->id} {$this->workerPid}] ";
+        $contents = sprintf("[%s.%s] [master %s] %s%s\n", date('Y-m-d H:i:s', $time['sec']), $usec, $this->masterPid, $workerInfo, $contents);
+
         if (!$this->daemonize) {
             echo $contents;
         }
@@ -243,7 +249,7 @@ class Process
                 posix_kill($workerPid, $signo);
             }
         } else {
-            $this->log("[worker:{$this->id} {$this->workerPid}] " . $msg);
+            $this->log($msg);
 
             // Worker process exit.
             exit(0);
