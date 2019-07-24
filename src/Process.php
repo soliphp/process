@@ -240,17 +240,16 @@ class Process
                 break;
         };
 
+        $this->log($msg);
+
         if (static::$isMaster) {
             static::$shutdown = true;
-            $this->log($msg);
 
             // Send stop signal to all worker processes.
             foreach (static::$workers as $id => $workerPid) {
                 posix_kill($workerPid, $signo);
             }
         } else {
-            $this->log($msg);
-
             // Worker process exit.
             exit(0);
         }
